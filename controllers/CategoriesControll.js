@@ -1,5 +1,7 @@
 const express = require('express');
+const ProductModel = require('../models/Product');
 const CategoryModel = require('../models/Category');
+const SubcategoryModel = require('../models/Subcategory');
 const categoryValidator = require('../validations/category');
 const handleValidErors = require('../utils/handleValidErors');
 
@@ -7,6 +9,18 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const categories = await CategoryModel.find();
+        res.json(categories);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Не вдалось отримати категорії',
+        });
+    }
+});
+
+router.get('/visibility', async (req, res) => {
+    try {
+        const categories = await CategoryModel.find({ visibility: true });
         res.json(categories);
     } catch (error) {
         console.log(error);
@@ -54,6 +68,12 @@ router.post('/', categoryValidator, handleValidErors, async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const categoryId = req.params.id;
     try {
+        const subcategories = await SubcategoryModel.find({ category: categoryId });
+        // Збираємо ідентифікатори підкатегорій
+        const subcategoryIds = subcategories.map(subcategory => subcategory._id);
+        // Видаляємо товари, які належать до знайдених підкатегорій
+        await ProductModel.deleteMany({ subcategory: { $in: subcategoryIds } });
+        await SubcategoryModel.deleteMany({ category: categoryId });
         const deletedCategory = await CategoryModel.findByIdAndDelete(categoryId);
         if (!deletedCategory) {
             return res.status(404).json({

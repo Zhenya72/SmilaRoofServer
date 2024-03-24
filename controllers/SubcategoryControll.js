@@ -1,5 +1,5 @@
 const express = require('express');
-const CategoryModel = require('../models/Category');  // Додайте цей рядок
+const ProductModel = require('../models/Product');
 const SubcategoryModel = require('../models/Subcategory');
 const categoryValidator = require('../validations/category');
 const handleValidErors = require('../utils/handleValidErors');
@@ -13,6 +13,21 @@ router.get('/category/:categoryID', async (req, res) => {
         const subcategories = await SubcategoryModel.find({ category: categoryId });
 
         res.json(subcategories);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Не вдалось отримати підкатегорії',
+        });
+    }
+});
+router.get('/visibility', async (req, res) => {
+    try {
+        const subcategories = await SubcategoryModel.find({ visibility: true }).populate({
+                path: 'category',
+                match: { visibility: true }
+        });
+        const visibleSubcategories = subcategories.filter(subcategory => subcategory.category !== null);
+        res.json(visibleSubcategories);
     } catch (error) {
         console.log(error);
         res.status(500).json({
@@ -40,13 +55,6 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', categoryValidator, handleValidErors, async (req, res) => {
     try {
-        const existingCategory = await CategoryModel.findById(req.body.category);
-        if (!existingCategory) {
-            return res.status(400).json({
-                message: 'Категорія не знайдена',
-            });
-        }
-
         const subcategory = new SubcategoryModel({
             name: req.body.name,
             imageUrl: req.body.imageUrl,
@@ -69,6 +77,7 @@ router.post('/', categoryValidator, handleValidErors, async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const categoryId = req.params.id;
     try {
+        await ProductModel.deleteMany({ subcategory: categoryId });        
         const deletedCategory = await SubcategoryModel.findByIdAndDelete(categoryId);
         if (!deletedCategory) {
             return res.status(404).json({

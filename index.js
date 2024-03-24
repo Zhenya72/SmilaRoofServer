@@ -7,6 +7,7 @@ const multer = require('multer');
 const CategoriesControll = require('./controllers/CategoriesControll');
 const SubcategoryControll = require('./controllers/SubcategoryControll');
 const AdminControll = require('./controllers/AdminControll');
+const ProductControll = require('./controllers/ProductControll');
 
 const app = express();
 
@@ -37,6 +38,7 @@ mongoose
 app.use('/categories', CategoriesControll);
 app.use('/subcategories', SubcategoryControll);
 app.use('/admin', AdminControll);
+app.use('/product', ProductControll);
 
 app.post('/upload', upload.single('image'), (req, res) => {
     res.json({
